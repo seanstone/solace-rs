@@ -64,6 +64,7 @@ pub struct OutboundMessageBuilder {
     sender_ts: Option<SystemTime>,
     eliding_eligible: Option<()>,
     is_reply: Option<()>,
+    deliver_to_one: Option<()>,
 }
 
 impl OutboundMessageBuilder {
@@ -170,6 +171,15 @@ impl OutboundMessageBuilder {
             self.eliding_eligible = Some(());
         } else {
             self.eliding_eligible = None;
+        }
+        self
+    }
+
+    pub fn deliver_to_one(mut self, deliver_to_one: bool) -> Self {
+        if deliver_to_one {
+            self.deliver_to_one = Some(());
+        } else {
+            self.deliver_to_one = None;
         }
         self
     }
@@ -309,6 +319,10 @@ impl OutboundMessageBuilder {
 
         if self.eliding_eligible.is_some() {
             unsafe { ffi::solClient_msg_setElidingEligible(msg_ptr, true.into()) };
+        }
+
+        if self.deliver_to_one.is_some() {
+            unsafe { ffi::solClient_msg_setDeliverToOne(msg_ptr, true.into()) };
         }
 
         if self.is_reply.is_some() {
