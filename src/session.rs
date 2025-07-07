@@ -48,6 +48,10 @@ unsafe impl<M: FnMut(InboundMessage) + Send, E: FnMut(SessionEvent) + Send> Send
 impl<'session, M: FnMut(InboundMessage) + Send, E: FnMut(SessionEvent) + Send>
     Session<'session, M, E>
 {
+    pub unsafe fn get_raw_session_ptr(&'session self) -> ffi::solClient_opaqueSession_pt {
+        self._session_ptr
+    }
+
     pub fn publish(&self, message: OutboundMessage) -> Result<()> {
         let send_message_raw_rc = unsafe {
             ffi::solClient_session_sendMsg(self._session_ptr, message.get_raw_message_ptr())
