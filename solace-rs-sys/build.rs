@@ -118,12 +118,10 @@ fn main() {
             println!("cargo:rustc-link-search=native={}", lib_dir.join("Win64/third-party").display());
             println!("cargo:rustc-link-lib-static=libcrypto_s");
             println!("cargo:rustc-link-lib-static=libssl_s");
-            println!("cargo:rustc-link-lib=libsolclient_s");
         } else {
             println!("cargo:rustc-link-lib=static=crypto");
             println!("cargo:rustc-link-lib=static=ssl");
             println!("cargo:rustc-link-lib=static=solclient");
-            println!("cargo:rustc-link-lib=static=solclientssl");
         }
     }
 }
