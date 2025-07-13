@@ -37,8 +37,6 @@ fn main() {
         }
         else if #[cfg(target_os = "linux")] {
             println!("cargo:rustc-link-search=native={}", lib_dir.join("Linux/lib").as_path().display());
-            println!("cargo:rustc-link-lib=static=crypto");
-            println!("cargo:rustc-link-lib=static=ssl");
             println!("cargo:rustc-link-lib=static=solclient");
         }
         else if #[cfg(target_os = "windows")] {
