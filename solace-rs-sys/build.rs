@@ -27,27 +27,26 @@ fn main() {
 
     let lib_dir = PathBuf::from(env::var("SOLCLIENT_LIB_PATH").unwrap());
 
-    println!(
-        "cargo:rustc-link-search=native={}",
-        lib_dir.as_path().display()
-    );
-
     cfg_if::cfg_if! {
         if #[cfg(target_os = "macos")] {
+            println!("cargo:rustc-link-search=native={}", lib_dir.join("Darwin/lib").as_path().display());
             println!("cargo:rustc-link-lib=dylib=gssapi_krb5");
+            println!("cargo:rustc-link-lib=static=crypto");
+            println!("cargo:rustc-link-lib=static=ssl");
+            println!("cargo:rustc-link-lib=static=solclient");
         }
-    }
-
-    cfg_if::cfg_if! {
-        if #[cfg(target_os = "windows")] {
+        else if #[cfg(target_os = "linux")] {
+            println!("cargo:rustc-link-search=native={}", lib_dir.join("Linux/lib").as_path().display());
+            println!("cargo:rustc-link-lib=static=crypto");
+            println!("cargo:rustc-link-lib=static=ssl");
+            println!("cargo:rustc-link-lib=static=solclient");
+        }
+        else if #[cfg(target_os = "windows")] {
+            println!("cargo:rustc-link-search=native={}", lib_dir.as_path().display());
             println!("cargo:rustc-link-search=native={}", lib_dir.join("Win64").display());
             println!("cargo:rustc-link-search=native={}", lib_dir.join("Win64/third-party").display());
             println!("cargo:rustc-link-lib-static=libcrypto_s");
             println!("cargo:rustc-link-lib-static=libssl_s");
-        } else {
-            println!("cargo:rustc-link-lib=static=crypto");
-            println!("cargo:rustc-link-lib=static=ssl");
-            println!("cargo:rustc-link-lib=static=solclient");
         }
     }
 }
