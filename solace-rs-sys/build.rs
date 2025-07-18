@@ -83,6 +83,7 @@ fn main() {
                 &solclient_tarball_path,
                 &solclient_folder_path,
             );
+            println!("cargo:rustc-link-lib=dylib=gssapi_krb5");
         } else if #[cfg(target_os = "linux")] {
             handle_platform(
                 "https://products.solace.com/download/C_API_LINUX64",
