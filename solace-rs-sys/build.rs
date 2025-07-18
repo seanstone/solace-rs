@@ -2,6 +2,7 @@ extern crate bindgen;
 use std::sync::Arc;
 use std::{env, io::Write, path::PathBuf, path::Path};
 use ureq::Agent;
+use std::process::Command;
 
 fn build_ureq_agent() -> Agent {
     rustls::crypto::ring::default_provider()
@@ -49,7 +50,25 @@ fn download_and_unpack(url: &str, tarball_path: PathBuf, tarball_unpack_path: Pa
         .for_each(|x| println!("> {}", x.display()));
 }
 
-fn handle_platform(solclient_tarball_url: &str, solclient_tarball_path: &Path, solclient_folder_path: &Path) {
+fn main() {
+    // do nothing if we are just building the docs
+    if std::env::var("DOCS_RS").is_ok() {
+        return;
+    }
+
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let solclient_folder_path = out_dir.join("solclient");
+    let solclient_tarball_path = out_dir.join("solclient.tar.gz");
+    
+    let solclient_tarball_url: &str = match target_os.as_str() {
+        "macos" => "https://products.solace.com/download/C_API_OSX",
+        "linux" => "https://products.solace.com/download/C_API_LINUX64",
+        "ios" => "https://products.solace.com/download/C_API_IOS",
+        _ => panic!("Unsupported target OS"),
+    };
+
     if !solclient_folder_path.is_dir() {
         eprintln!(
             "Solclient not found. Downloading from {}",
@@ -61,41 +80,30 @@ fn handle_platform(solclient_tarball_url: &str, solclient_tarball_path: &Path, s
             solclient_folder_path.to_path_buf(),
         );
     }
-    let lib_dir = solclient_folder_path.join("lib");
-    println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=solclient");
-}
 
-fn main() {
-    // do nothing if we are just building the docs
-    if std::env::var("DOCS_RS").is_ok() {
-        return;
-    }
-
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let solclient_folder_path = out_dir.join("solclient");
-    let solclient_tarball_path = out_dir.join("solclient.tar.gz");
-
-    cfg_if::cfg_if! {
-        if #[cfg(target_os = "macos")] {
-            handle_platform(
-                "https://products.solace.com/download/C_API_OSX",
-                &solclient_tarball_path,
-                &solclient_folder_path,
-            );
-            println!("cargo:rustc-link-lib=dylib=gssapi_krb5");
-        } else if #[cfg(target_os = "linux")] {
-            handle_platform(
-                "https://products.solace.com/download/C_API_LINUX64",
-                &solclient_tarball_path,
-                &solclient_folder_path,
-            );
-        } else if #[cfg(target_os = "ios")] {
-            handle_platform(
-                "https://products.solace.com/download/C_API_IOS",
-                &solclient_tarball_path,
-                &solclient_folder_path,
-            );
+    if target_os == "ios" {
+        let lib_path = solclient_folder_path.join("lib").join("libsolclient.a");
+        let status = Command::new("lipo")
+            .args(&[
+                lib_path.to_str().unwrap(),
+                "-thin",
+                "arm64",
+                "-output",
+                lib_path.to_str().unwrap(),
+            ])
+            .status()
+            .expect("Failed to run lipo");
+        if !status.success() {
+            panic!("lipo command failed");
         }
     }
+
+    println!("cargo:rustc-link-search=native={}", solclient_folder_path.join("lib").display());
+    println!("cargo:rustc-link-lib=static=solclient");
+
+    if target_os == "macos" {
+        println!("cargo:rustc-link-lib=dylib=gssapi_krb5");
+    }
+
+    println!("cargo:rerun-if-changed=build.rs");
 }
