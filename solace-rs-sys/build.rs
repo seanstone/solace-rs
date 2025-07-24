@@ -81,23 +81,6 @@ fn main() {
         );
     }
 
-    if target_os == "ios" {
-        let lib_path = solclient_folder_path.join("lib").join("libsolclient.a");
-        let status = Command::new("lipo")
-            .args(&[
-                lib_path.to_str().unwrap(),
-                "-thin",
-                "arm64",
-                "-output",
-                lib_path.to_str().unwrap(),
-            ])
-            .status()
-            .expect("Failed to run lipo");
-        if !status.success() {
-            panic!("lipo command failed");
-        }
-    }
-
     println!("cargo:rustc-link-search=native={}", solclient_folder_path.join("lib").display());
     println!("cargo:rustc-link-lib=static=solclient");
 
